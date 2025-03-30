@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced PDF Reader</title>
+    <title>PDF Reader</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4/turn.min.js"></script>
     <style>
@@ -11,58 +11,46 @@
         #pdf-container { width: 80%; margin: auto; }
         canvas { display: block; margin: 10px auto; border: 1px solid black; }
         .controls { margin-top: 10px; }
-        .btn { padding: 8px 15px; cursor: pointer; margin: 5px; border: none; background: #007BFF; color: white; border-radius: 5px; }
-        .dark-mode { background: #222; color: white; }
-        .page-turn { width: 600px; height: 800px; margin: auto; }
+        .btn { padding: 8px 15px; cursor: pointer; margin: 5px; border: none; }
+        .dark-mode { background: #333; color: white; }
     </style>
 </head>
 <body>
-    <h1>Advanced PDF Reader</h1>
-    <input type="file" id="fileInput" />
-    <input type="text" id="urlInput" placeholder="Enter PDF URL" />
-    <button class="btn" onclick="loadPDFfromURL()">Load PDF</button>
-    <div id="pdf-container" class="page-turn"></div>
+    <h1>PDF Reader</h1>
+    <div id="pdf-container"></div>
     <div class="controls">
         <button class="btn" onclick="prevPage()">Previous</button>
         <span id="page-info"></span>
         <button class="btn" onclick="nextPage()">Next</button>
         <button class="btn" onclick="toggleDarkMode()">Toggle Dark Mode</button>
     </div>
-    
+
     <script>
         let pdfDoc = null,
             pageNum = 1,
             scale = 1.5,
             pdfContainer = document.getElementById('pdf-container');
-        
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            let file = event.target.files[0];
-            if (file) {
-                let fileReader = new FileReader();
-                fileReader.onload = function() {
-                    loadPDF(new Uint8Array(this.result));
-                };
-                fileReader.readAsArrayBuffer(file);
-            }
-        });
 
-        function loadPDFfromURL() {
-            let url = document.getElementById('urlInput').value;
-            if (url) {
-                pdfjsLib.getDocument(url).promise.then(pdf => {
-                    pdfDoc = pdf;
-                    renderPage(pageNum);
-                }).catch(err => alert("Invalid PDF URL"));
-            }
+        // Function to get the PDF link from the URL
+        function getPDFLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('file');
         }
-        
-        function loadPDF(data) {
-            pdfjsLib.getDocument(data).promise.then(pdf => {
+
+        // Load PDF from the URL parameter
+        function loadPDF(pdfURL) {
+            if (!pdfURL) {
+                alert("No PDF URL provided!");
+                return;
+            }
+            pdfjsLib.getDocument(pdfURL).promise.then(function(pdf) {
                 pdfDoc = pdf;
                 renderPage(pageNum);
+            }).catch(err => {
+                alert("Failed to load PDF: " + err.message);
             });
         }
-        
+
         function renderPage(num) {
             pdfDoc.getPage(num).then(function(page) {
                 let canvas = document.createElement('canvas');
@@ -75,33 +63,30 @@
                 let renderContext = { canvasContext: ctx, viewport: viewport };
                 page.render(renderContext);
                 document.getElementById('page-info').textContent = `Page ${num} of ${pdfDoc.numPages}`;
-                applyPageTurnEffect();
             });
         }
-        
+
         function prevPage() {
             if (pageNum > 1) {
                 pageNum--;
                 renderPage(pageNum);
             }
         }
-        
+
         function nextPage() {
             if (pageNum < pdfDoc.numPages) {
                 pageNum++;
                 renderPage(pageNum);
             }
         }
-        
+
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
         }
-        
-        function applyPageTurnEffect() {
-            setTimeout(() => {
-                $('.page-turn').turn({ width: 600, height: 800 });
-            }, 500);
-        }
+
+        // Get the PDF URL from query parameters and load it
+        const pdfURL = getPDFLink();
+        loadPDF(pdfURL);
     </script>
 </body>
 </html>
