@@ -24,66 +24,31 @@
     </div>
 
     <script>
-        let pdfDoc = null,
-            totalPages = 0,
-            currentPage = 1;
-
         function loadPDF(url) {
+            if (!url) {
+                alert("No PDF link found!");
+                return;
+            }
+            // Load PDF with PDF.js
             pdfjsLib.getDocument(url).promise.then(function(pdf) {
                 pdfDoc = pdf;
                 totalPages = pdf.numPages;
                 renderBook();
+            }).catch(error => {
+                alert("Failed to load PDF: " + error.message);
             });
         }
-
-        function renderBook() {
-            let book = document.getElementById("book");
-            book.innerHTML = "";
-            
-            for (let i = 1; i <= totalPages; i++) {
-                let pageDiv = document.createElement("div");
-                pageDiv.classList.add("page");
-                let canvas = document.createElement("canvas");
-                pageDiv.appendChild(canvas);
-                book.appendChild(pageDiv);
-                renderPage(i, canvas);
-            }
-
-            $("#book").turn({
-                width: 800,
-                height: 600,
-                autoCenter: true
-            });
-        }
-
-        function renderPage(num, canvas) {
-            pdfDoc.getPage(num).then(function(page) {
-                let ctx = canvas.getContext('2d');
-                let viewport = page.getViewport({ scale: 2 });
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                let renderContext = { canvasContext: ctx, viewport: viewport };
-                page.render(renderContext);
-            });
-        }
-
-        function prevPage() {
-            $("#book").turn("previous");
-        }
-
-        function nextPage() {
-            $("#book").turn("next");
-        }
-
-        // Get PDF link from URL (React Native WebView will pass it)
+    
+        // Get PDF link from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const pdfLink = urlParams.get("file");
-
+        let pdfLink = urlParams.get("file");
+    
         if (pdfLink) {
             loadPDF(pdfLink);
         } else {
             alert("No PDF link found!");
         }
     </script>
+    
 </body>
 </html>
