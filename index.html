@@ -6,56 +6,65 @@
     <title>PDF Reader</title>
     <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; }
-        #container { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; }
-        #progress-bar { width: 90%; height: 10px; background: #ddd; margin-top: 10px; border-radius: 5px; position: relative; }
-        #progress { height: 100%; background: black; width: 0%; border-radius: 5px; }
-        #pdf-container { flex: 1; width: 90%; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        canvas { width: 100%; max-height: 80vh; }
-        .controls { display: flex; justify-content: space-between; width: 90%; padding: 10px; }
+        body { margin: 0; font-family: Arial, sans-serif; text-align: center; }
+        #pdf-container { width: 100vw; height: 90vh; overflow: auto; }
+        canvas { display: block; margin: auto; }
+        #progress-bar { height: 5px; background: #000; transition: width 0.3s; }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="progress-bar"><div id="progress"></div></div>
-        <div id="pdf-container"><canvas id="pdf-canvas"></canvas></div>
-        <div class="controls">
-            <button onclick="prevPage()">Previous</button>
-            <span id="page-info"></span>
-            <button onclick="nextPage()">Next</button>
-        </div>
-    </div>
-
+    <div id="progress-bar"></div>
+    <div id="pdf-container"></div>
     <script>
-        let urlParams = new URLSearchParams(window.location.search);
-        let pdfUrl = urlParams.get('file') || 'https://example.com/sample.pdf'; // Default PDF
-        let pdfDoc = null, pageNum = 1, scale = 1.5, canvas = document.getElementById("pdf-canvas"), ctx = canvas.getContext('2d');
-        
-        pdfjsLib.getDocument(pdfUrl).promise.then(doc => {
-            pdfDoc = doc;
-            document.getElementById('page-info').innerText = `Page ${pageNum} of ${doc.numPages}`;
-            renderPage(pageNum);
-        });
+        const urlParams = new URLSearchParams(window.location.search);
+        const pdfUrl = urlParams.get('file');
+        if (!pdfUrl) {
+            alert("No PDF file provided!");
+        }
 
+        let pdfDoc = null, pageNum = 1, scale = 1.5;
+        const container = document.getElementById("pdf-container");
+        const progressBar = document.getElementById("progress-bar");
+        
         function renderPage(num) {
             pdfDoc.getPage(num).then(page => {
+                let canvas = document.createElement("canvas");
+                let ctx = canvas.getContext("2d");
                 let viewport = page.getViewport({ scale });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-                let renderCtx = { canvasContext: ctx, viewport };
-                page.render(renderCtx);
-                document.getElementById('progress').style.width = ((num / pdfDoc.numPages) * 100) + '%';
-                document.getElementById('page-info').innerText = `Page ${num} of ${pdfDoc.numPages}`;
+                page.render({ canvasContext: ctx, viewport });
+                container.innerHTML = "";
+                container.appendChild(canvas);
+                progressBar.style.width = `${(num / pdfDoc.numPages) * 100}%`;
             });
         }
 
         function nextPage() {
-            if (pageNum < pdfDoc.numPages) { pageNum++; renderPage(pageNum); }
+            if (pageNum < pdfDoc.numPages) {
+                pageNum++;
+                renderPage(pageNum);
+            }
         }
 
         function prevPage() {
-            if (pageNum > 1) { pageNum--; renderPage(pageNum); }
+            if (pageNum > 1) {
+                pageNum--;
+                renderPage(pageNum);
+            }
         }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowRight") nextPage();
+            if (event.key === "ArrowLeft") prevPage();
+        });
+
+        pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+            pdfDoc = pdf;
+            renderPage(pageNum);
+        }).catch(error => {
+            alert("Error loading PDF: " + error);
+        });
     </script>
 </body>
 </html>
