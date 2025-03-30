@@ -3,90 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Reader</title>
+    <title>Flipbook PDF Reader</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4/turn.min.js"></script>
     <style>
         body { text-align: center; background: #f4f4f4; font-family: Arial, sans-serif; }
-        #pdf-container { width: 80%; margin: auto; }
-        canvas { display: block; margin: 10px auto; border: 1px solid black; }
+        #book { width: 90%; height: 600px; margin: auto; }
+        .page { width: 100%; height: 100%; background: white; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
+        canvas { width: 100%; height: 100%; }
         .controls { margin-top: 10px; }
-        .btn { padding: 8px 15px; cursor: pointer; margin: 5px; border: none; }
-        .dark-mode { background: #333; color: white; }
+        .btn { padding: 8px 15px; cursor: pointer; margin: 5px; border: none; background: #333; color: white; }
     </style>
 </head>
 <body>
-    <h1>PDF Reader</h1>
-    <div id="pdf-container"></div>
+    <h1>Flipbook PDF Reader</h1>
+    <div id="book"></div>
     <div class="controls">
         <button class="btn" onclick="prevPage()">Previous</button>
-        <span id="page-info"></span>
         <button class="btn" onclick="nextPage()">Next</button>
-        <button class="btn" onclick="toggleDarkMode()">Toggle Dark Mode</button>
     </div>
 
     <script>
         let pdfDoc = null,
-            pageNum = 1,
-            scale = 1.5,
-            pdfContainer = document.getElementById('pdf-container');
+            totalPages = 0,
+            currentPage = 1;
 
-        // Function to get the PDF link from the URL
-        function getPDFLink() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('file');
-        }
-
-        // Load PDF from the URL parameter
-        function loadPDF(pdfURL) {
-            if (!pdfURL) {
-                alert("No PDF URL provided!");
-                return;
-            }
-            pdfjsLib.getDocument(pdfURL).promise.then(function(pdf) {
+        function loadPDF(url) {
+            pdfjsLib.getDocument(url).promise.then(function(pdf) {
                 pdfDoc = pdf;
-                renderPage(pageNum);
-            }).catch(err => {
-                alert("Failed to load PDF: " + err.message);
+                totalPages = pdf.numPages;
+                renderBook();
             });
         }
 
-        function renderPage(num) {
+        function renderBook() {
+            let book = document.getElementById("book");
+            book.innerHTML = "";
+            
+            for (let i = 1; i <= totalPages; i++) {
+                let pageDiv = document.createElement("div");
+                pageDiv.classList.add("page");
+                let canvas = document.createElement("canvas");
+                pageDiv.appendChild(canvas);
+                book.appendChild(pageDiv);
+                renderPage(i, canvas);
+            }
+
+            $("#book").turn({
+                width: 800,
+                height: 600,
+                autoCenter: true
+            });
+        }
+
+        function renderPage(num, canvas) {
             pdfDoc.getPage(num).then(function(page) {
-                let canvas = document.createElement('canvas');
                 let ctx = canvas.getContext('2d');
-                let viewport = page.getViewport({ scale: scale });
+                let viewport = page.getViewport({ scale: 2 });
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
-                pdfContainer.innerHTML = '';
-                pdfContainer.appendChild(canvas);
                 let renderContext = { canvasContext: ctx, viewport: viewport };
                 page.render(renderContext);
-                document.getElementById('page-info').textContent = `Page ${num} of ${pdfDoc.numPages}`;
             });
         }
 
         function prevPage() {
-            if (pageNum > 1) {
-                pageNum--;
-                renderPage(pageNum);
-            }
+            $("#book").turn("previous");
         }
 
         function nextPage() {
-            if (pageNum < pdfDoc.numPages) {
-                pageNum++;
-                renderPage(pageNum);
-            }
+            $("#book").turn("next");
         }
 
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-        }
+        // Get PDF link from URL (React Native WebView will pass it)
+        const urlParams = new URLSearchParams(window.location.search);
+        const pdfLink = urlParams.get("file");
 
-        // Get the PDF URL from query parameters and load it
-        const pdfURL = getPDFLink();
-        loadPDF(pdfURL);
+        if (pdfLink) {
+            loadPDF(pdfLink);
+        } else {
+            alert("No PDF link found!");
+        }
     </script>
 </body>
 </html>
