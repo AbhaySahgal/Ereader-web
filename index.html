@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Reader</title>
+    <title>Advanced PDF Reader</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4/turn.min.js"></script>
     <style>
@@ -11,14 +11,17 @@
         #pdf-container { width: 80%; margin: auto; }
         canvas { display: block; margin: 10px auto; border: 1px solid black; }
         .controls { margin-top: 10px; }
-        .btn { padding: 8px 15px; cursor: pointer; margin: 5px; border: none; }
-        .dark-mode { background: #333; color: white; }
+        .btn { padding: 8px 15px; cursor: pointer; margin: 5px; border: none; background: #007BFF; color: white; border-radius: 5px; }
+        .dark-mode { background: #222; color: white; }
+        .page-turn { width: 600px; height: 800px; margin: auto; }
     </style>
 </head>
 <body>
-    <h1>PDF Reader</h1>
+    <h1>Advanced PDF Reader</h1>
     <input type="file" id="fileInput" />
-    <div id="pdf-container"></div>
+    <input type="text" id="urlInput" placeholder="Enter PDF URL" />
+    <button class="btn" onclick="loadPDFfromURL()">Load PDF</button>
+    <div id="pdf-container" class="page-turn"></div>
     <div class="controls">
         <button class="btn" onclick="prevPage()">Previous</button>
         <span id="page-info"></span>
@@ -37,15 +40,28 @@
             if (file) {
                 let fileReader = new FileReader();
                 fileReader.onload = function() {
-                    let typedarray = new Uint8Array(this.result);
-                    pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-                        pdfDoc = pdf;
-                        renderPage(pageNum);
-                    });
+                    loadPDF(new Uint8Array(this.result));
                 };
                 fileReader.readAsArrayBuffer(file);
             }
         });
+
+        function loadPDFfromURL() {
+            let url = document.getElementById('urlInput').value;
+            if (url) {
+                pdfjsLib.getDocument(url).promise.then(pdf => {
+                    pdfDoc = pdf;
+                    renderPage(pageNum);
+                }).catch(err => alert("Invalid PDF URL"));
+            }
+        }
+        
+        function loadPDF(data) {
+            pdfjsLib.getDocument(data).promise.then(pdf => {
+                pdfDoc = pdf;
+                renderPage(pageNum);
+            });
+        }
         
         function renderPage(num) {
             pdfDoc.getPage(num).then(function(page) {
@@ -59,6 +75,7 @@
                 let renderContext = { canvasContext: ctx, viewport: viewport };
                 page.render(renderContext);
                 document.getElementById('page-info').textContent = `Page ${num} of ${pdfDoc.numPages}`;
+                applyPageTurnEffect();
             });
         }
         
@@ -78,6 +95,12 @@
         
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
+        }
+        
+        function applyPageTurnEffect() {
+            setTimeout(() => {
+                $('.page-turn').turn({ width: 600, height: 800 });
+            }, 500);
         }
     </script>
 </body>
