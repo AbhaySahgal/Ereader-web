@@ -4,66 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Reader</title>
-    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; text-align: center; }
-        #pdf-container { width: 100vw; height: 90vh; overflow: auto; }
-        canvas { display: block; margin: auto; }
-        #progress-bar { height: 5px; background: #000; transition: width 0.3s; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f8f8f8;
+        }
+        #pdf-container {
+            width: 90%;
+            height: 85vh;
+            border: 1px solid #ccc;
+            overflow: hidden;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        #progress {
+            height: 100%;
+            width: 0%;
+            background: #007bff;
+            transition: width 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body>
-    <div id="progress-bar"></div>
-    <div id="pdf-container"></div>
+    <div id="progress-bar">
+        <div id="progress"></div>
+    </div>
+
+    <div id="pdf-container">
+        <iframe id="pdf-frame"></iframe>
+    </div>
+
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const pdfUrl = urlParams.get('file');
-        if (!pdfUrl) {
-            alert("No PDF file provided!");
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
         }
 
-        let pdfDoc = null, pageNum = 1, scale = 1.5;
-        const container = document.getElementById("pdf-container");
-        const progressBar = document.getElementById("progress-bar");
-        
-        function renderPage(num) {
-            pdfDoc.getPage(num).then(page => {
-                let canvas = document.createElement("canvas");
-                let ctx = canvas.getContext("2d");
-                let viewport = page.getViewport({ scale });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                page.render({ canvasContext: ctx, viewport });
-                container.innerHTML = "";
-                container.appendChild(canvas);
-                progressBar.style.width = `${(num / pdfDoc.numPages) * 100}%`;
-            });
+        const pdfFile = getQueryParam('file');
+        if (pdfFile) {
+            document.getElementById("pdf-frame").src = pdfFile;
+        } else {
+            document.getElementById("pdf-container").innerHTML = "<p style='color: red;'>PDF file not found!</p>";
         }
 
-        function nextPage() {
-            if (pageNum < pdfDoc.numPages) {
-                pageNum++;
-                renderPage(pageNum);
-            }
-        }
-
-        function prevPage() {
-            if (pageNum > 1) {
-                pageNum--;
-                renderPage(pageNum);
-            }
-        }
-
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowRight") nextPage();
-            if (event.key === "ArrowLeft") prevPage();
-        });
-
-        pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
-            pdfDoc = pdf;
-            renderPage(pageNum);
-        }).catch(error => {
-            alert("Error loading PDF: " + error);
+        document.getElementById("pdf-frame").addEventListener("load", function() {
+            setTimeout(() => {
+                document.getElementById("progress").style.width = "100%";
+            }, 500);
         });
     </script>
 </body>
