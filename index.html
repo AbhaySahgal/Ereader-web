@@ -3,72 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Reader</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f8f8f8;
-        }
-        #pdf-container {
-            width: 90%;
-            height: 85vh;
-            border: 1px solid #ccc;
-            overflow: hidden;
-            position: relative;
-        }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        #progress-bar {
-            width: 100%;
-            height: 5px;
-            background: #ddd;
-            position: fixed;
-            top: 0;
-            left: 0;
-        }
-        #progress {
-            height: 100%;
-            width: 0%;
-            background: #007bff;
-            transition: width 0.3s ease-in-out;
-        }
-    </style>
+    <title>PDF Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
 </head>
-<body>
-    <div id="progress-bar">
-        <div id="progress"></div>
-    </div>
-
-    <div id="pdf-container">
-        <iframe id="pdf-frame"></iframe>
-    </div>
-
+<body style="margin: 0; overflow: hidden;">
+    <canvas id="pdfCanvas"></canvas>
     <script>
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
+        const urlParams = new URLSearchParams(window.location.search);
+        const pdfUrl = urlParams.get('file'); // Firebase PDF link from query param
 
-        const pdfFile = getQueryParam('file');
-        if (pdfFile) {
-            document.getElementById("pdf-frame").src = pdfFile;
-        } else {
-            document.getElementById("pdf-container").innerHTML = "<p style='color: red;'>PDF file not found!</p>";
-        }
+        const canvas = document.getElementById('pdfCanvas');
+        const ctx = canvas.getContext('2d');
 
-        document.getElementById("pdf-frame").addEventListener("load", function() {
-            setTimeout(() => {
-                document.getElementById("progress").style.width = "100%";
-            }, 500);
+        pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+            pdf.getPage(1).then(page => {
+                const viewport = page.getViewport({ scale: 1.5 });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                const renderContext = { canvasContext: ctx, viewport };
+                page.render(renderContext);
+            });
         });
     </script>
 </body>
